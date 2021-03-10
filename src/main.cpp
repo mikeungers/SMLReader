@@ -64,6 +64,9 @@ void setup()
 	for (uint8_t i = 0; i < NUM_OF_SENSORS; i++, config++)
 	{
 		Sensor *sensor = new Sensor(config, process_message);
+		if (DEEP_SLEEP_ENABLED) {
+			sensor->enableSleepMode();
+		}
 		sensors->push_back(sensor);
 	}
 	DEBUG("Sensor setup done.");
@@ -105,6 +108,16 @@ void setup()
 	DEBUG("Setup done.");
 }
 
+bool canSleep() {
+	// Check whether all sensors are sleeping
+	for (std::list<Sensor*>::iterator it = sensors->begin(); it != sensors->end(); ++it){
+		if (!(*it)->isSleeping()) {
+			return false;
+		};
+	}
+	return true;
+}
+
 void loop()
 {
 	// Publisher
@@ -127,6 +140,13 @@ void loop()
 	}
 	iotWebConf.doLoop();
 	yield();
+
+	// Sleep if deep sleep is enabled
+	if (DEEP_SLEEP_ENABLED) {
+		if (canSleep()) {
+			ESP.deepSleep(min(DEEP_SLEEP_DURATION,3600) * 1e6);
+		};
+	}
 }
 
 void configSaved()

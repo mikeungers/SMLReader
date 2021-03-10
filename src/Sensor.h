@@ -18,7 +18,8 @@ enum State
     WAIT_FOR_START_SEQUENCE,
     READ_MESSAGE,
     PROCESS_MESSAGE,
-    READ_CHECKSUM
+    READ_CHECKSUM,
+    SLEEP
 };
 
 class SensorConfig
@@ -68,6 +69,14 @@ public:
         }
     }
 
+    bool enableSleepMode() {
+        this->sleeModeEnabled = true;
+    }
+
+    bool isSleeping() {
+        return this->state == SLEEP;
+    }
+
 private:
     SoftwareSerial *serial;
     byte buffer[BUFFER_SIZE];
@@ -79,15 +88,22 @@ private:
     State state = INIT;
     void (*callback)(byte *buffer, size_t len, Sensor *sensor) = NULL;
     JLed *status_led;
+    bool sleeModeEnabled = false;
 
     void run_current_state()
     {
-        if (this->state != INIT)
+        if (this->state != INIT && this->state != SLEEP)
         {
             if ((millis() - this->last_state_reset) > (READ_TIMEOUT * 1000))
             {
-                DEBUG("Did not receive an SML message within %d seconds, starting over.", READ_TIMEOUT);
-                this->reset_state();
+                if (this->sleeModeEnabled) {
+                    DEBUG("Did not receive an SML message within %d seconds, will fall asleep now.", READ_TIMEOUT);
+                    this->set_state(SLEEP);
+                }
+                else {
+                    DEBUG("Did not receive an SML message within %d seconds, starting over.", READ_TIMEOUT);
+                    this->reset_state();
+                }
             }
             switch (this->state)
             {
@@ -249,8 +265,17 @@ private:
 
         }
 
-        // Start over
-        this->reset_state();
+        DEBUG("Message has been processed.");
+
+        // Start over or sleep
+        if (this->sleeModeEnabled) {
+            DEBUG("Falling asleep.");
+            this->set_state(SLEEP);
+        }
+        else {
+            DEBUG("Starting over.");
+            this->reset_state();
+        }
     }
 };
 

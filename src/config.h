@@ -13,6 +13,12 @@ const char *CONFIG_VERSION = "1.0.2";
 const char *WIFI_AP_SSID = "SMLReader";
 const char *WIFI_AP_DEFAULT_PASSWORD = "";
 
+// Enables deep-sleep between measurements
+// Attention: Make sure to connect RST with GPIO16 (D0 on Wemos D1) to allow the ESP to be woken up by timer.
+const bool DEEP_SLEEP_ENABLED = false;
+// Time between sleep cycles (3600 seconds max)
+const int DEEP_SLEEP_DURATION = 1800;
+
 static const SensorConfig SENSOR_CONFIGS[] = {
     {.pin = D2,
      .name = "1",

@@ -114,6 +114,13 @@ I strongly recommend using PlatformIO as it takes care of that itself.
 The configuration of the reading heads is done by editing `src/config.h` and adjusting  `SENSOR_CONFIGS` (see below).
 
 ```c++
+
+// Enables deep-sleep between measurements
+// Attention: Make sure to connect RST with GPIO16 (D0 on Wemos D1) to allow the ESP to be woken up by timer.
+const bool DEEP_SLEEP_ENABLED = true;
+// Time between sleep cycles (3600 seconds max)
+const int DEEP_SLEEP_DURATION = 3600;
+
 static const SensorConfig SENSOR_CONFIGS[] = {
     {.pin = D2, // GPIO pin of the phototransistor
      .name = "1", // Sensor name used in MQTT topic
