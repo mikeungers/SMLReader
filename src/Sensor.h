@@ -31,6 +31,7 @@ public:
     const bool status_led_inverted;
     const uint8_t status_led_pin;
     const uint8_t interval;
+    const bool use_software_serial;
 };
 
 class Sensor
@@ -42,10 +43,14 @@ public:
         this->config = config;
         DEBUG("Initializing sensor %s...", this->config->name);
         this->callback = callback;
-        this->serial = new SoftwareSerial();
-        this->serial->begin(9600, SWSERIAL_8N1, this->config->pin, -1, false);
-        this->serial->enableTx(false);
-        this->serial->enableRx(true);
+        if (this->config->use_software_serial) {
+            this->serial = new SoftwareSerial();
+            this->serial->begin(9600, SWSERIAL_8N1, this->config->pin, -1, false);
+            this->serial->enableTx(false);
+            this->serial->enableRx(true);
+        } else {
+            Serial.begin(9600);
+        }
         DEBUG("Initialized sensor %s.", this->config->name);
 
         if (this->config->status_led_enabled) {
@@ -112,11 +117,11 @@ private:
     // Wrappers for sensor access
     int data_available()
     {
-        return this->serial->available();
+        return this->config->use_software_serial ? this->serial->available() : Serial.available();
     }
     int data_read()
     {
-        return this->serial->read();
+        return this->config->use_software_serial ? this->serial->read() : Serial.read();
     }
 
 
