@@ -3,6 +3,11 @@
 
 #include "Arduino.h"
 #include "Sensor.h"
+#include <NTPClient.h>
+#include <WiFiUdp.h>
+
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, 3600);
 
 const char *VERSION = "2.1.6";
 

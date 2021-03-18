@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sml/sml_file.h>
 #include "MqttPublisher.h"
+#include <ArduinoJson.h>
 
 struct RestConfig
 {
@@ -35,6 +36,11 @@ public:
 
   void publish(Sensor *sensor, sml_file *file)
   {
+    DynamicJsonDocument doc(2048);
+    doc["timestamp"] = timeClient.getEpochTime();
+    doc["espId"] = ESP.getChipId();
+    doc["userKey"] = "0imfnc8mVLWwsAawjYr4Rx-Af50DDqtlx";
+    doc["sensorKey"] = "0imfnc8mVLWwsAawjYr4Rx-Af50DDqtlx";
 
     for (int i = 0; i < file->messages_len; i++)
     {
@@ -71,24 +77,30 @@ public:
                         prec = 0;
                     value = value * pow(10, scaler);
                     sprintf(buffer, "%.*f", prec, value);
-                    publish(entryTopic + "value", buffer);
+                    doc[obisIdentifier] = buffer;
                 }
                 else if (!sensor->config->numeric_only) {
                   if (entry->value->type == SML_TYPE_OCTET_STRING)
                   {
                       char *value;
                       sml_value_to_strhex(entry->value, &value, true);
-                      publish(entryTopic + "value", value);
+                      doc[obisIdentifier] = value;
                       free(value);
                   }
                   else if (entry->value->type == SML_TYPE_BOOLEAN)
                   {
-                      publish(entryTopic + "value",  entry->value->data.boolean ? "true" : "false");
+                      doc[obisIdentifier] = entry->value->data.boolean ? "true" : "false";
                   }
                 }
             }
         }
     }
+    http.begin(net, "http://ptsv2.com/t/ilh63-1616009767/post"); //HTTP
+    http.addHeader("Content-Type", "application/json");
+    String json;
+    serializeJson(doc, json);
+    http.POST(json);
+    http.end();
   }
 
 private:
@@ -110,10 +122,9 @@ private:
   }
   void publish(const char *topic, const char *payload)
   {
-    http.begin(net, "http://ptsv2.com/t/ilh63-1616009767/post"); //HTTP
-    http.addHeader("Content-Type", "application/json");
+
     int httpCode = http.POST("{\"hello\":\"world\"}");
-    http.end();
+
   }
 };
 

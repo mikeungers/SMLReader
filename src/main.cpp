@@ -8,8 +8,6 @@
 #include "RestPublisher.h"
 #include "EEPROM.h"
 #include <ESP8266WiFi.h>
-#include <NTPClient.h>
-#include <WiFiUdp.h>
 
 std::list<Sensor*> *sensors = new std::list<Sensor*>();
 
@@ -20,8 +18,6 @@ DNSServer dnsServer;
 WebServer server(80);
 HTTPUpdateServer httpUpdater;
 WiFiClient net;
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, 3600);
 
 MqttConfig mqttConfig;
 MqttPublisher publisher;
@@ -53,8 +49,6 @@ void process_message(byte *buffer, size_t len, Sensor *sensor)
 
 	// free the malloc'd memory
 	sml_file_free(file);
-
-	timeClient.update();
 }
 
 void setup()
@@ -122,6 +116,7 @@ void loop()
 	// Publisher
 	if (connected) {
 		publisher.loop();
+		timeClient.update();
 		yield();
 	}
 
