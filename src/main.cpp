@@ -5,8 +5,11 @@
 #include "Sensor.h"
 #include <IotWebConf.h>
 #include "MqttPublisher.h"
+#include "RestPublisher.h"
 #include "EEPROM.h"
 #include <ESP8266WiFi.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
 
 std::list<Sensor*> *sensors = new std::list<Sensor*>();
 
@@ -17,9 +20,13 @@ DNSServer dnsServer;
 WebServer server(80);
 HTTPUpdateServer httpUpdater;
 WiFiClient net;
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, 3600);
 
 MqttConfig mqttConfig;
 MqttPublisher publisher;
+RestPublisher restPublisher;
+
 
 IotWebConf iotWebConf(WIFI_AP_SSID, &dnsServer, &server, WIFI_AP_DEFAULT_PASSWORD, CONFIG_VERSION);
 IotWebConfParameter params[] = {
@@ -46,6 +53,8 @@ void process_message(byte *buffer, size_t len, Sensor *sensor)
 
 	// free the malloc'd memory
 	sml_file_free(file);
+
+	timeClient.update();
 }
 
 void setup()
@@ -81,6 +90,8 @@ void setup()
 	iotWebConf.setWifiConnectionCallback(&wifiConnected);
 	iotWebConf.setupUpdateServer(&httpUpdater);
 
+	timeClient.begin();
+
 	boolean validConfig = iotWebConf.init();
 	if (!validConfig)
 	{
@@ -97,8 +108,9 @@ void setup()
 	{
 		// Setup MQTT publisher
 		publisher.setup(mqttConfig);
+		restPublisher.setup(mqttConfig);
 	}
-
+	
 	server.on("/", [] { iotWebConf.handleConfig(); });
 	server.onNotFound([]() { iotWebConf.handleNotFound(); });
 
@@ -140,4 +152,5 @@ void wifiConnected()
 	DEBUG("WiFi connection established.");
 	connected = true;
 	publisher.connect();
+	restPublisher.connect();
 }
