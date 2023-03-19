@@ -122,6 +122,8 @@ static const SensorConfig SENSOR_CONFIGS[] = {
      .status_led_inverted = true, // Some LEDs (like the ESP8266 builtin LED) require an inverted output signal
      .status_led_pin = LED_BUILTIN, // GPIO pin used for sensor status LED
      .interval = 0 // If greater than 0, messages are published every [interval] seconds
+     .loopback = false // If "true" outputs received SML message
+     .loopback_pin = D3 // Outputs received SML message on this pin
     },
     {.pin = D5,
      .name = "2",
