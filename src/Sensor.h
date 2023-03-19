@@ -59,6 +59,14 @@ public:
         this->serial->begin(9600, SWSERIAL_8N1, this->config->pin, -1, false);
         this->serial->enableTx(false);
         this->serial->enableRx(true);
+
+        if (this->config->loopback) {
+            this->serial_loopback = unique_ptr<SoftwareSerial>(new SoftwareSerial());
+            this->serial_loopback->begin(9600, SWSERIAL_8N1, -1, this->config->loopback_pin, true);
+            this->serial_loopback->enableTx(true);
+            this->serial_loopback->enableRx(false);
+        }
+
         DEBUG("Initialized sensor %s.", this->config->name);
 
         if (this->config->status_led_enabled)
@@ -86,6 +94,7 @@ public:
 
 private:
     unique_ptr<SoftwareSerial> serial;
+    unique_ptr<SoftwareSerial> serial_loopback;
     byte buffer[BUFFER_SIZE];
     size_t position = 0;
     unsigned long last_state_reset = 0;
@@ -117,6 +126,9 @@ private:
                 this->read_message();
                 break;
             case PROCESS_MESSAGE:
+                if (this->config->loopback) {
+                    this->serial_loopback->write(this->buffer, this->position);
+                }
                 this->process_message();
                 break;
             case READ_CHECKSUM:
